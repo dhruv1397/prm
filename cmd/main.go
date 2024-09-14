@@ -6,21 +6,40 @@ import (
 	"github.com/dhruv1397/pr-monitor/clientbuilder"
 	"github.com/dhruv1397/pr-monitor/types"
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 )
 
+const (
+	colWidthSerialNumber     = 4
+	colWidthTitle            = 34
+	colWidthPRNumber         = 10
+	colWidthSCMType          = 10
+	colWidthState            = 10
+	colWidthMergeable        = 10
+	colWidthApproved         = 17
+	colWidthCommented        = 17
+	colWidthRequestedChanges = 17
+	colWidthURL              = 34
+	separatorLength          = 31 + colWidthSerialNumber + colWidthTitle + colWidthPRNumber +
+		colWidthSCMType + colWidthState + colWidthMergeable + colWidthApproved +
+		colWidthCommented + colWidthRequestedChanges + colWidthURL
+	spacingPattern = "| %-4s | %-34s | %-10s | %-10s | %-10s | %-10s | %-17s | %-17s | %-17s | %-34s |\n"
+)
+
 func main() {
 	githubPAT := ""
+	//state := "closed"
 
 	ctx := context.Background()
 
-	client, err := clientbuilder.GetGithubClient(ctx, githubPAT)
+	client, err := clientbuilder.GetGithubPRClient(ctx, githubPAT)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	prs, err := client.GetOpenPullRequests(ctx)
+	prs, err := client.GetPullRequests(ctx, nil, ConvertToPrintable)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,62 +48,65 @@ func main() {
 
 }
 
-func PrintPullRequests(prs []*types.PullRequest) {
-	const colWidthSerialNumber = 4
-	const colWidthTitle = 34
-	const colWidthPRNumber = 10
-	const colWidthSCMType = 10
-	const colWidthMergeable = 10
-	const colWidthApproved = 17
-	const colWidthCommented = 17
-	const colWidthRequestedChanges = 17
-	const colWidthURL = 34
-	const spacingPattern = "| %-4s | %-34s | %-10s | %-10s | %-10s | %-17s | %-17s | %-17s | %-34s |\n"
-	const separatorLength = 28 + colWidthSerialNumber + colWidthTitle + colWidthPRNumber +
-		colWidthSCMType + colWidthMergeable + colWidthApproved +
-		colWidthCommented + colWidthRequestedChanges + colWidthURL
-	printSeparator(separatorLength)
+func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {
+	wrappedTitle := WrapText(pr.Title, colWidthTitle)
+	wrappedPRNumber := WrapText(strconv.Itoa(pr.Number), colWidthPRNumber)
+	wrappedSCMType := WrapText(pr.SCMProviderType, colWidthSCMType)
+	wrappedState := WrapText(pr.State, colWidthState)
+	wrappedMergeable := WrapText(pr.Mergeable, colWidthMergeable)
+	wrappedApproved := WrapTextSlice(pr.Approved, colWidthApproved)
+	wrappedCommented := WrapTextSlice(pr.Commented, colWidthCommented)
+	wrappedRequestedChanges := WrapTextSlice(pr.RequestedChanges, colWidthRequestedChanges)
+	wrappedURL := WrapText(pr.URL, colWidthURL)
 
-	fmt.Printf(spacingPattern, "#", "Title", "PR Number", "SCM Type", "Mergeable", "Approved", "Commented",
+	maxRows := max(
+		len(wrappedTitle),
+		len(wrappedPRNumber),
+		len(wrappedSCMType),
+		len(wrappedState),
+		len(wrappedMergeable),
+		len(wrappedApproved),
+		len(wrappedCommented),
+		len(wrappedRequestedChanges),
+		len(wrappedURL),
+	)
+	return &types.PrintablePullRequest{
+		NumberRaw:          pr.Number,
+		SCMProviderTypeRaw: pr.SCMProviderType,
+		Title:              wrappedTitle,
+		Number:             wrappedPRNumber,
+		SCMProviderType:    wrappedSCMType,
+		State:              wrappedState,
+		Mergeable:          wrappedMergeable,
+		Approved:           wrappedApproved,
+		Commented:          wrappedCommented,
+		RequestedChanges:   wrappedRequestedChanges,
+		URL:                wrappedURL,
+		MaxRows:            maxRows,
+	}
+}
+
+func PrintPullRequests(prs []*types.PrintablePullRequest) {
+	printSeparator(separatorLength)
+	fmt.Printf(spacingPattern, "#", "Title", "PR Number", "SCM Type", "State", "Mergeable", "Approved", "Commented",
 		"Requested Changes", "URL")
-
 	printSeparator(separatorLength)
+
+	slices.SortFunc(prs, types.ComparePrintablePullRequest)
 
 	for index, pr := range prs {
-
-		wrappedSerialNumber := wrapText(strconv.Itoa(index), colWidthSerialNumber)
-		wrappedTitle := wrapText(pr.Title, colWidthTitle)
-		wrappedPRNumber := wrapText(strconv.Itoa(pr.Number), colWidthPRNumber)
-		wrappedSCMType := wrapText(pr.SCMProviderType, colWidthSCMType)
-		wrappedMergeable := wrapText(strconv.FormatBool(pr.Mergeable), colWidthMergeable)
-		wrappedApproved := wrapTextSlice(pr.Approved, colWidthApproved)
-		wrappedCommented := wrapTextSlice(pr.Commented, colWidthCommented)
-		wrappedRequestedChanges := wrapTextSlice(pr.ChangesRequested, colWidthRequestedChanges)
-		wrappedURL := wrapText(pr.URL, colWidthURL)
-
-		maxRows := max(
-			len(wrappedSerialNumber),
-			len(wrappedTitle),
-			len(wrappedPRNumber),
-			len(wrappedSCMType),
-			len(wrappedMergeable),
-			len(wrappedApproved),
-			len(wrappedCommented),
-			len(wrappedRequestedChanges),
-			len(wrappedURL),
-		)
-
-		for i := 0; i < maxRows; i++ {
+		for i := 0; i < pr.MaxRows; i++ {
 			fmt.Printf(spacingPattern,
-				getListElement(wrappedSerialNumber, i),
-				getListElement(wrappedTitle, i),
-				getListElement(wrappedPRNumber, i),
-				getListElement(wrappedSCMType, i),
-				getListElement(wrappedMergeable, i),
-				getListElement(wrappedApproved, i),
-				getListElement(wrappedCommented, i),
-				getListElement(wrappedRequestedChanges, i),
-				getListElement(wrappedURL, i),
+				getSrNumberElement(index, i),
+				getListElement(pr.Title, i),
+				getListElement(pr.Number, i),
+				getListElement(pr.SCMProviderType, i),
+				getListElement(pr.State, i),
+				getListElement(pr.Mergeable, i),
+				getListElement(pr.Approved, i),
+				getListElement(pr.Commented, i),
+				getListElement(pr.RequestedChanges, i),
+				getListElement(pr.URL, i),
 			)
 		}
 		printSeparator(separatorLength)
@@ -95,7 +117,7 @@ func printSeparator(length int) {
 	fmt.Println(strings.Repeat("-", length))
 }
 
-func wrapText(text string, maxWidth int) []string {
+func WrapText(text string, maxWidth int) []string {
 	var chunks []string
 
 	for i := 0; i < len(text); i += maxWidth {
@@ -109,8 +131,8 @@ func wrapText(text string, maxWidth int) []string {
 	return chunks
 }
 
-func wrapTextSlice(text []string, maxWidth int) []string {
-	return wrapText(strings.Join(text, ", "), maxWidth)
+func WrapTextSlice(text []string, maxWidth int) []string {
+	return WrapText(strings.Join(text, ", "), maxWidth)
 }
 
 func max(values ...int) int {
@@ -128,4 +150,11 @@ func getListElement(text []string, index int) string {
 		return ""
 	}
 	return text[index]
+}
+
+func getSrNumberElement(srNumber int, index int) string {
+	if index == 0 {
+		return strconv.Itoa(srNumber)
+	}
+	return ""
 }

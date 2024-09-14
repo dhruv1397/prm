@@ -1,9 +1,9 @@
 package types
 
 type SCMProvider struct {
-	Identifier string
-	Type       string // GITHUB, HARNESS
-	Alias      string
-	Host       string
-	Token      string
+	Identifier string `yaml:"identifier"`
+	Type       string `yaml:"type"` // github, harness
+	Alias      string `yaml:"alias,omitempty"`
+	Host       string `yaml:"host"`
+	Token      string `yaml:"token"`
 }
