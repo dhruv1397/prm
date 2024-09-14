@@ -1,7 +1,6 @@
 package client
 
 type HarnessClient struct {
-
 }
 
 // var _ Client = (*HarnessClient)(nil)
