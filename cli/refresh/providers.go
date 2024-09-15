@@ -7,6 +7,7 @@ import (
 	"github.com/dhruv1397/pr-monitor/clientbuilder"
 	"github.com/dhruv1397/pr-monitor/store"
 	"github.com/dhruv1397/pr-monitor/types"
+	"sync"
 	"time"
 )
 
@@ -26,46 +27,100 @@ func (c *providersCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
-	var updatedProviders = make([]types.SCMProvider, 0)
+	var updatedProviders []types.SCMProvider
+	var errs []error
+
+	var wg sync.WaitGroup
+	respCh := make(chan types.SCMProvider)
+	errCh := make(chan error)
+
+	var providersMu sync.Mutex
+	var errorsMu sync.Mutex
 
 	for _, provider := range providers {
-		var currentProvider = *provider
-		if currentProvider.Type == "github" {
-			scmClient, err := clientbuilder.GetGithubSCMClient(ctx, currentProvider.User.PAT)
-			if err != nil {
-				return err
+		wg.Add(1)
+		go func(provider *types.SCMProvider) {
+			defer wg.Done()
+
+			var currentProvider = *provider
+			if currentProvider.Type == "github" {
+				scmClient, err := clientbuilder.GetGithubSCMClient(ctx, currentProvider.User.PAT)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				gituhbUser, err := scmClient.GetUser(ctx)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				gituhbUser.PAT = currentProvider.User.PAT
+				currentProvider.User = gituhbUser
+
+			} else if currentProvider.Type == "harness" {
+				scmClient, err := clientbuilder.GetHarnessSCMClient(currentProvider.Host, currentProvider.User.PAT)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				harnessUser, err := scmClient.GetUser(ctx)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				currentProvider.User = harnessUser
+				repos, err := scmClient.GetRepos(ctx)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				currentProvider.Repos = repos
+
+			} else {
+				errCh <- fmt.Errorf("unknown provider type: %s", currentProvider.Type)
+				return
 			}
-			gituhbUser, err := scmClient.GetUser(ctx)
-			if err != nil {
-				return err
+
+			respCh <- currentProvider
+		}(provider)
+	}
+
+	go func() {
+		wg.Wait()
+		close(respCh)
+		close(errCh)
+	}()
+
+	for respCh != nil || errCh != nil {
+		select {
+		case resp, ok := <-respCh:
+			if !ok {
+				respCh = nil
+			} else {
+				providersMu.Lock()
+				updatedProviders = append(updatedProviders, resp)
+				providersMu.Unlock()
 			}
-			gituhbUser.PAT = currentProvider.User.PAT
-			currentProvider.User = gituhbUser
-		} else if c.providerType == "harness" {
-			scmClient, err := clientbuilder.GetHarnessSCMClient(currentProvider.Host, currentProvider.User.PAT)
-			if err != nil {
-				return err
+		case errValue, ok := <-errCh:
+			if !ok {
+				errCh = nil
+			} else {
+				errorsMu.Lock()
+				errs = append(errs, errValue)
+				errorsMu.Unlock()
 			}
-			harnessUser, err := scmClient.GetUser(ctx)
-			if err != nil {
-				return err
-			}
-			currentProvider.User = harnessUser
-			repos, err := scmClient.GetRepos(ctx)
-			if err != nil {
-				return err
-			}
-			currentProvider.Repos = repos
-		} else {
-			return fmt.Errorf("unknown provider type: %s", c.providerType)
 		}
-		updatedProviders = append(updatedProviders, currentProvider)
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors occurred: %v", errs)
 	}
 
 	err = str.UpdateBulk(updatedProviders)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -74,6 +129,6 @@ func registerProviders(app *kingpin.CmdClause) {
 
 	cmd := app.Command("providers", "refresh all the SCM providers").Default().Action(c.run)
 	cmd.Flag("name", "name of the SCM provider").StringVar(&c.name)
-	cmd.Flag("type", "type of the SCM provider").StringVar(&c.name)
+	cmd.Flag("type", "type of the SCM provider").StringVar(&c.providerType)
 
 }

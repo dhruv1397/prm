@@ -53,7 +53,8 @@ func (g *GithubPRClient) GetPullRequests(
 		return openPrintablePRs, fmt.Errorf("error executing search query: %v", err)
 	}
 
-	var mu sync.Mutex
+	var prMutex sync.Mutex
+	var errMutex sync.Mutex
 	var wg sync.WaitGroup
 
 	errCh := make(chan error, 500)
@@ -90,15 +91,17 @@ func (g *GithubPRClient) GetPullRequests(
 			if !ok {
 				respCh = nil
 			} else {
-				mu.Lock()
+				prMutex.Lock()
 				openPrintablePRs = append(openPrintablePRs, resp)
-				mu.Unlock()
+				prMutex.Unlock()
 			}
 		case errValue, ok := <-errCh:
 			if !ok {
 				errCh = nil
 			} else {
+				errMutex.Lock()
 				errs = append(errs, errValue)
+				errMutex.Unlock()
 			}
 		}
 	}

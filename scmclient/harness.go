@@ -54,6 +54,7 @@ func (h *HarnessSCMClient) GetRepos(ctx context.Context) ([]*types.Repo, error) 
 
 	var allRepos []*types.Repo
 	var repoMutex sync.Mutex
+	var repoErrMutex sync.Mutex
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(orgs)*200)
@@ -120,7 +121,9 @@ func (h *HarnessSCMClient) GetRepos(ctx context.Context) ([]*types.Repo, error) 
 			if !ok {
 				errChan = nil
 			} else {
+				repoErrMutex.Lock()
 				errs = append(errs, errValue)
+				repoErrMutex.Unlock()
 			}
 		}
 	}

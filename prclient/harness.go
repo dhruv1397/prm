@@ -37,6 +37,7 @@ func (h *HarnessPRClient) GetPullRequests(
 ) ([]*types.PrintablePullRequest, error) {
 	var allPullRequests []*types.PrintablePullRequest
 	var prMutex sync.Mutex
+	var errMutex sync.Mutex
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(h.repos)*500)
@@ -147,7 +148,9 @@ func (h *HarnessPRClient) GetPullRequests(
 			if !ok {
 				errChan = nil
 			} else {
+				errMutex.Lock()
 				errs = append(errs, errValue)
+				errMutex.Unlock()
 			}
 		}
 	}
