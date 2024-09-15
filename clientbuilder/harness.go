@@ -6,10 +6,10 @@ import (
 	"github.com/dhruv1397/pr-monitor/types"
 )
 
-func GetHarnessSCMClient(pat string) (*scmclient.HarnessSCMClient, error) {
-	return scmclient.NewHarnessSCMClient(pat)
+func GetHarnessSCMClient(host string, pat string) (*scmclient.HarnessSCMClient, error) {
+	return scmclient.NewHarnessSCMClient(host, pat)
 }
 
-func GetHarnessPRClient(user *types.HarnessUser, repo *types.HarnessRepo) (prclient.PRClient, error) {
-	return prclient.NewHarnessPRClient(user, repo)
+func GetHarnessPRClient(host string, user *types.User, repos []*types.Repo) (prclient.PRClient, error) {
+	return prclient.NewHarnessPRClient(host, user, repos)
 }

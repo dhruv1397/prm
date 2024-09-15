@@ -7,7 +7,7 @@ type PullRequest struct {
 	Title            string
 	SCMProviderType  string
 	URL              string
-	State            string
+	State            string //closed, merged. open
 	Approved         []string
 	Commented        []string
 	RequestedChanges []string

@@ -12,13 +12,13 @@ import (
 )
 
 type GithubPRClient struct {
-	user   *types.GithubUser
+	user   *types.User
 	client *github.Client
 }
 
 var _ PRClient = (*GithubPRClient)(nil)
 
-func NewGithubPRClient(user *types.GithubUser, client *github.Client) (*GithubPRClient, error) {
+func NewGithubPRClient(user *types.User, client *github.Client) (*GithubPRClient, error) {
 	return &GithubPRClient{
 		user:   user,
 		client: client,
@@ -27,19 +27,19 @@ func NewGithubPRClient(user *types.GithubUser, client *github.Client) (*GithubPR
 
 func (g *GithubPRClient) GetPullRequests(
 	ctx context.Context,
-	state *string,
+	state string,
 	transformationFn func(*types.PullRequest) *types.PrintablePullRequest,
 ) ([]*types.PrintablePullRequest, error) {
 	var openPrintablePRs = make([]*types.PrintablePullRequest, 0)
 	var githubState = ""
-	if state != nil {
-		if *state == "closed" {
-			githubState = "state:closed is:unmerged"
-		} else if *state == "merged" {
-			githubState = "state:closed is:merged"
-		} else if *state == "open" {
-			githubState = "state:open"
-		}
+	if state == "closed" {
+		githubState = "state:closed is:unmerged"
+	} else if state == "merged" {
+		githubState = "state:closed is:merged"
+	} else if state == "open" {
+		githubState = "state:open"
+	} else if state == "all" {
+		githubState = ""
 	}
 
 	query := fmt.Sprintf("%s author:%s type:pr", githubState, g.user.Name)
@@ -56,23 +56,21 @@ func (g *GithubPRClient) GetPullRequests(
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	errCh := make(chan error, 100)
-	respCh := make(chan *types.PrintablePullRequest, 100)
+	errCh := make(chan error, 500)
+	respCh := make(chan *types.PrintablePullRequest, 500)
 
 	for _, issue := range result.Issues {
 		wg.Add(1)
 
-		// Launch a goroutine for each PR detail fetch
 		go func(issue *github.Issue) {
 			defer wg.Done()
 
 			openPrintablePR, err := g.getPRDetails(ctx, issue, transformationFn)
 			if err != nil {
-				errCh <- err // Send error to the error channel
+				errCh <- err
 				return
 			}
 
-			// Send the successful result to the response channel
 			respCh <- openPrintablePR
 		}(issue)
 
@@ -86,7 +84,6 @@ func (g *GithubPRClient) GetPullRequests(
 
 	var errs []error
 
-	// Reading from both response and error channels
 	for respCh != nil || errCh != nil {
 		select {
 		case resp, ok := <-respCh:
