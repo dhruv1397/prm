@@ -7,6 +7,7 @@ import (
 	"github.com/dhruv1397/pr-monitor/cli/list"
 	"github.com/dhruv1397/pr-monitor/cli/refresh"
 	"github.com/dhruv1397/pr-monitor/cli/remove"
+	"github.com/dhruv1397/pr-monitor/version"
 )
 
 const (
@@ -22,5 +23,6 @@ func main() {
 	add.Register(app)
 	remove.Register(app)
 	refresh.Register(app)
+	app.Version(version.Version.String())
 	kingpin.MustParse(app.Parse(args))
 }
