@@ -2,6 +2,7 @@ package remove
 
 import (
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/dhruv1397/pr-monitor/cli"
 	"github.com/dhruv1397/pr-monitor/store"
 )
 
@@ -21,7 +22,7 @@ func (c *providerCommand) run(*kingpin.ParseContext) error {
 func registerProvider(app *kingpin.CmdClause) {
 	c := &providerCommand{}
 
-	cmd := app.Command("provider", "remove an SCM provider").Action(c.run)
+	cmd := app.Command(cli.SubcommandProvider, cli.SubcommandRemoveProviderHelpText).Action(c.run)
 
-	cmd.Arg("name", "name of the SCM provider").Required().StringVar(&c.name)
+	cmd.Arg(cli.ArgName, cli.ArgNameHelpText).Required().StringVar(&c.name)
 }

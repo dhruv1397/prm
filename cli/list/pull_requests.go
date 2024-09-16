@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/dhruv1397/pr-monitor/cli"
 	"github.com/dhruv1397/pr-monitor/clientbuilder"
 	"github.com/dhruv1397/pr-monitor/prclient"
 	"github.com/dhruv1397/pr-monitor/store"
 	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/pr-monitor/util"
 	"sync"
 
 	"slices"
@@ -47,7 +49,7 @@ func (c *prsCommand) run(*kingpin.ParseContext) error {
 	str := store.NewSCMProviderImpl()
 	providers, err := str.List(c.providerType, c.providerName)
 	if err != nil {
-		return fmt.Errorf("failed to list providers: %v", err)
+		return fmt.Errorf("failed to list providers: %w", err)
 	}
 	if len(providers) == 0 {
 		fmt.Println("No providers found!")
@@ -64,11 +66,9 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 	errCh := make(chan error)
 	var wg sync.WaitGroup
 
-	// Create mutexes to synchronize access to the allPRs and errs slices
 	var prMutex sync.Mutex
 	var errMutex sync.Mutex
 
-	// Iterate over providers and fetch PRs in parallel
 	for _, provider := range providers {
 		wg.Add(1)
 		go func(provider *types.SCMProvider) {
@@ -90,21 +90,18 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 		}(provider)
 	}
 
-	// Close channels after all goroutines are done
 	go func() {
 		wg.Wait()
 		close(respCh)
 		close(errCh)
 	}()
 
-	// Collect PRs and errors
 	for respCh != nil || errCh != nil {
 		select {
 		case prs, ok := <-respCh:
 			if !ok {
 				respCh = nil
 			} else {
-				// Add PRs to the result list safely using prMutex
 				prMutex.Lock()
 				allPRs = append(allPRs, prs...)
 				prMutex.Unlock()
@@ -113,7 +110,6 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 			if !ok {
 				errCh = nil
 			} else {
-				// Add error to the error list safely using errMutex
 				errMutex.Lock()
 				errs = append(errs, err)
 				errMutex.Unlock()
@@ -121,16 +117,14 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 		}
 	}
 
-	// Print the collected PRs
 	if len(allPRs) > 0 {
 		printPullRequests(allPRs)
 	} else {
 		fmt.Println("No PRs found!")
 	}
 
-	// If there are errors, return the first one (you can customize error handling here)
 	if len(errs) > 0 {
-		return fmt.Errorf("errors occurred: %v", errs)
+		return fmt.Errorf("errors encountered:\n%v", util.FormatErrors(errs))
 	}
 
 	return nil
@@ -149,13 +143,13 @@ func (c *prsCommand) getPRClient(ctx context.Context, provider *types.SCMProvide
 func registerPRs(app *kingpin.CmdClause) {
 	c := &prsCommand{}
 
-	cmd := app.Command("prs", "list pull requests").Default().Action(c.run)
+	cmd := app.Command(cli.SubcommandPRs, cli.SubcommandPRsHelpText).Default().Action(c.run)
 
-	cmd.Flag("state", "state of the pull request").Default("open").StringVar(&c.state)
+	cmd.Flag(cli.FlagState, cli.FlagStateHelpText).Default("open").StringVar(&c.state)
 
-	cmd.Flag("type", "type of the SCM provider").StringVar(&c.providerType)
+	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).StringVar(&c.providerType)
 
-	cmd.Flag("provider", "name of the SCM provider").StringVar(&c.providerName)
+	cmd.Flag(cli.FlagName, cli.FlagNameHelpText).StringVar(&c.providerName)
 }
 
 func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {

@@ -23,7 +23,7 @@ func NewSCMProviderImpl() SCMProvider {
 func (s *scmProviderImpl) Create(provider types.SCMProvider) error {
 	existingProviders, err := s.readYAML()
 	if err != nil {
-		return fmt.Errorf("error during listing existing SCM providers before creating new: %v", err)
+		return fmt.Errorf("error listing existing SCM providers before creating new: %w", err)
 	}
 
 	if existingProviders[provider.Name] != nil {
@@ -37,7 +37,7 @@ func (s *scmProviderImpl) Create(provider types.SCMProvider) error {
 
 	err = s.writeYAML(existingProviders)
 	if err != nil {
-		return fmt.Errorf("error during writing SCM provider config: %v", err)
+		return fmt.Errorf("error writing SCM provider config: %w", err)
 	}
 	return nil
 }
@@ -45,7 +45,7 @@ func (s *scmProviderImpl) Create(provider types.SCMProvider) error {
 func (s *scmProviderImpl) UpdateBulk(providers []types.SCMProvider) error {
 	existingProviders, err := s.readYAML()
 	if err != nil {
-		return fmt.Errorf("error during listing existing SCM providers before updating: %v", err)
+		return fmt.Errorf("error listing existing SCM providers before updating: %w", err)
 	}
 
 	for _, provider := range providers {
@@ -58,7 +58,7 @@ func (s *scmProviderImpl) UpdateBulk(providers []types.SCMProvider) error {
 
 	err = s.writeYAML(existingProviders)
 	if err != nil {
-		return fmt.Errorf("error during writing SCM provider config: %v", err)
+		return fmt.Errorf("error writing SCM provider config: %w", err)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (s *scmProviderImpl) UpdateBulk(providers []types.SCMProvider) error {
 func (s *scmProviderImpl) List(providerType string, providerName string) ([]*types.SCMProvider, error) {
 	providerMap, err := s.readYAML()
 	if err != nil {
-		return nil, fmt.Errorf("error during listing SCM providers: %v", err)
+		return nil, fmt.Errorf("error listing SCM providers: %w", err)
 	}
 	if providerMap == nil {
 		return []*types.SCMProvider{}, nil
@@ -86,10 +86,11 @@ func (s *scmProviderImpl) List(providerType string, providerName string) ([]*typ
 func (s *scmProviderImpl) Delete(name string) error {
 	existingProviders, err := s.readYAML()
 	if err != nil {
-		return fmt.Errorf("error during listing existing SCM providers before deleting: %v", err)
+		return fmt.Errorf("error listing existing SCM providers before deleting: %w", err)
 	}
 
 	if existingProviders[name] == nil {
+		fmt.Printf("SCM provider %s does not exist\n", name)
 		return nil
 	}
 
@@ -97,7 +98,7 @@ func (s *scmProviderImpl) Delete(name string) error {
 
 	err = s.writeYAML(existingProviders)
 	if err != nil {
-		return fmt.Errorf("error during writing SCM provider config: %v", err)
+		return fmt.Errorf("error writing SCM provider config: %w", err)
 	}
 	return nil
 }
@@ -105,7 +106,7 @@ func (s *scmProviderImpl) Delete(name string) error {
 func (s *scmProviderImpl) getConfigFilePath() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting user home directory: %w", err)
 	}
 	configFilePath := filepath.Join(homeDir, configFileName)
 	return configFilePath, nil
@@ -114,26 +115,26 @@ func (s *scmProviderImpl) getConfigFilePath() (string, error) {
 func (s *scmProviderImpl) readYAML() (map[string]*types.SCMProvider, error) {
 	configFilePath, err := s.getConfigFilePath()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting SCM provider config file path before reading: %w", err)
 	}
 
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
 		file, err := os.OpenFile(configFilePath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
-			return nil, fmt.Errorf("could not create file %s: %v", configFilePath, err)
+			return nil, fmt.Errorf("could not create SCM provider config file %s: %w", configFilePath, err)
 		}
 		defer file.Close()
 	}
 
 	content, err := os.ReadFile(configFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading SCM provider config file %s: %w", configFilePath, err)
 	}
 
 	var config = &types.SCMConfig{}
 	err = yaml.Unmarshal(content, &config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error deserialising SCM provider config: %w", err)
 	}
 	providerMap := map[string]*types.SCMProvider{}
 	for _, provider := range config.Providers {
@@ -146,7 +147,7 @@ func (s *scmProviderImpl) readYAML() (map[string]*types.SCMProvider, error) {
 func (s *scmProviderImpl) writeYAML(providerMap map[string]*types.SCMProvider) error {
 	configFilePath, err := s.getConfigFilePath()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting SCM provider config file path before writing: %w", err)
 	}
 
 	providers := make([]*types.SCMProvider, 0)
@@ -159,12 +160,12 @@ func (s *scmProviderImpl) writeYAML(providerMap map[string]*types.SCMProvider) e
 
 	yamlData, err := yaml.Marshal(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("error serialising SCM provider config: %w", err)
 	}
 
 	err = os.WriteFile(configFilePath, yamlData, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("error writing SCM provider config: %w", err)
 	}
 
 	return nil

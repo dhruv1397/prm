@@ -2,11 +2,10 @@ package prclient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/dhruv1397/pr-monitor/harness"
 	"github.com/dhruv1397/pr-monitor/types"
-	"io"
-	"log"
+	"github.com/dhruv1397/pr-monitor/util"
 	"net/http"
 	"strconv"
 	"sync"
@@ -97,9 +96,7 @@ func (h *HarnessPRClient) GetPullRequests(
 						changesRequested = append(changesRequested, k)
 					}
 
-					url := fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s%d", h.host, "/ng/account/", repo.AccountIdentifier,
-						"/module/code/orgs/", repo.OrgIdentifier, "/projects/", repo.ProjectIdentifier, "/repos/",
-						repo.RepoIdentifier, "/pulls/", pr.Number)
+					url := h.getHarnessPRURL(pr.Number, repo)
 
 					mergeable := "-"
 					if pr.State != "merged" {
@@ -156,10 +153,16 @@ func (h *HarnessPRClient) GetPullRequests(
 	}
 
 	if len(errs) > 0 {
-		return allPullRequests, fmt.Errorf("errors encountered: %v", errs)
+		return allPullRequests, fmt.Errorf("errors encountered:\n%v", util.FormatErrors(errs))
 	}
 
 	return allPullRequests, nil
+}
+
+func (h *HarnessPRClient) getHarnessPRURL(prNumber int, repo *types.Repo) string {
+	return fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s%d", h.host, "/ng/account/", repo.AccountIdentifier,
+		"/module/code/orgs/", repo.OrgIdentifier, "/projects/", repo.ProjectIdentifier, "/repos/",
+		repo.RepoIdentifier, "/pulls/", prNumber)
 }
 
 func (h *HarnessPRClient) getPRs(ctx context.Context, repo *types.Repo, state string) ([]*types.PRData, error) {
@@ -168,9 +171,9 @@ func (h *HarnessPRClient) getPRs(ctx context.Context, repo *types.Repo, state st
 		"/pullreq?accountIdentifier=", repo.AccountIdentifier, "&orgIdentifier=", repo.OrgIdentifier,
 		"&projectIdentifier=", repo.ProjectIdentifier, "&state=", state, "&page=0&limit=500&created_by=",
 		h.user.PrincipalID, "&order=asc")
-	err := h.get(ctx, apiURL, &prs)
+	err := harness.Get(ctx, h.httpClient, h.user.PAT, apiURL, &prs)
 	if err != nil {
-		return prs, err
+		return prs, fmt.Errorf("error fetching PRs for repo %s: %w", repo.RepoIdentifier, err)
 	}
 	return prs, nil
 }
@@ -184,36 +187,10 @@ func (h *HarnessPRClient) getPRActivities(
 	apiURL := fmt.Sprintf("%s%s%s%s%d%s%s%s%s%s%s%s", h.host, "/code/api/v1/repos/", repo.RepoIdentifier,
 		"/pullreq/", pr.Number, "/activities?accountIdentifier=", repo.AccountIdentifier, "&orgIdentifier=",
 		repo.OrgIdentifier, "&projectIdentifier=", repo.ProjectIdentifier, "&type=code-comment&type=comment&type=review-submit")
-	err := h.get(ctx, apiURL, &prActivities)
+	err := harness.Get(ctx, h.httpClient, h.user.PAT, apiURL, &prActivities)
 	if err != nil {
-		return prActivities, err
+		return prActivities, fmt.Errorf("error fetching PR activities for %s: %w",
+			h.getHarnessPRURL(pr.Number, repo), err)
 	}
 	return prActivities, nil
-}
-
-func (h *HarnessPRClient) get(ctx context.Context, url string, v any) error {
-	r, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("x-api-key", h.user.PAT)
-
-	response, err := h.httpClient.Do(r)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if len(body) == 0 {
-		return nil
-	}
-	err = json.Unmarshal(body, v)
-	if err != nil {
-		return err
-	}
-	return nil
 }

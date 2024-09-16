@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/dhruv1397/pr-monitor/cli"
 	"github.com/dhruv1397/pr-monitor/clientbuilder"
 	"github.com/dhruv1397/pr-monitor/store"
 	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/pr-monitor/util"
 	"sync"
 	"time"
 )
@@ -113,7 +115,7 @@ func (c *providersCommand) run(*kingpin.ParseContext) error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("errors occurred: %v", errs)
+		return fmt.Errorf("errors encountered:\n%v", util.FormatErrors(errs))
 	}
 
 	err = str.UpdateBulk(updatedProviders)
@@ -127,8 +129,10 @@ func (c *providersCommand) run(*kingpin.ParseContext) error {
 func registerProviders(app *kingpin.CmdClause) {
 	c := &providersCommand{}
 
-	cmd := app.Command("providers", "refresh all the SCM providers").Default().Action(c.run)
-	cmd.Flag("name", "name of the SCM provider").StringVar(&c.name)
-	cmd.Flag("type", "type of the SCM provider").StringVar(&c.providerType)
+	cmd := app.Command(cli.SubcommandProviders, cli.SubcommandRefreshProvidersHelpText).Default().Action(c.run)
+
+	cmd.Flag(cli.FlagName, cli.FlagNameHelpText).StringVar(&c.name)
+
+	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).StringVar(&c.providerType)
 
 }
