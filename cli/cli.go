@@ -28,15 +28,23 @@ const (
 	ArgName         = "name"
 	ArgNameHelpText = "Name of the SCM provider."
 
-	FlagName  = "name"
-	FlagType  = "type"
-	FlagHost  = "host"
-	FlagState = "state"
+	FlagName   = "name"
+	FlagType   = "type"
+	FlagHost   = "host"
+	FlagState  = "state"
+	FlagOutput = "output"
 
-	FlagNameHelpText  = "Name of the SCM provider."
-	FlagTypeHelpText  = "Type of the SCM provider:- [github/harness]."
-	FlagHostHelpText  = "Host URL of the SCM provider, eg https://github.com, https://app.harness.io."
-	FlagStateHelpText = "State of the pull request:- [open/merged/closed/all]"
+	FlagNameShort   = 'n'
+	FlagTypeShort   = 't'
+	FlagHostShort   = 'h'
+	FlagStateShort  = 's'
+	FlagOutputShort = 'o'
+
+	FlagNameHelpText   = "Name of the SCM provider."
+	FlagTypeHelpText   = "Type of the SCM provider:- [github/harness]."
+	FlagHostHelpText   = "Host URL of the SCM provider, eg https://github.com, https://app.harness.io."
+	FlagStateHelpText  = "State of the pull request:- [open/merged/closed/all]"
+	FlagOutputHelpText = "Output format:- [table/json/yaml]"
 )
 
 func GetArguments() []string {

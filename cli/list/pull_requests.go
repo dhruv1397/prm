@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/dhruv1397/pr-monitor/cli"
@@ -10,6 +11,7 @@ import (
 	"github.com/dhruv1397/pr-monitor/store"
 	"github.com/dhruv1397/pr-monitor/types"
 	"github.com/dhruv1397/pr-monitor/util"
+	"gopkg.in/yaml.v3"
 	"sync"
 
 	"slices"
@@ -40,6 +42,7 @@ type prsCommand struct {
 	state        string
 	providerType string
 	providerName string
+	output       string
 }
 
 func (c *prsCommand) run(*kingpin.ParseContext) error {
@@ -59,10 +62,10 @@ func (c *prsCommand) run(*kingpin.ParseContext) error {
 }
 
 func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider) error {
-	var allPRs = make([]*types.PrintablePullRequest, 0)
+	var allPRs = make([]*types.PullRequestResponse, 0)
 	var errs []error
 
-	respCh := make(chan []*types.PrintablePullRequest)
+	respCh := make(chan []*types.PullRequestResponse)
 	errCh := make(chan error)
 	var wg sync.WaitGroup
 
@@ -118,7 +121,25 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 	}
 
 	if len(allPRs) > 0 {
-		printPullRequests(allPRs)
+		if c.output == "json" {
+			rawPRs := getRawPRs(allPRs)
+			slices.SortFunc(rawPRs, types.ComparePullRequest)
+			jsonOutput, err := json.Marshal(allPRs)
+			if err != nil {
+				return fmt.Errorf("failed to convert PRs from object to json: %w", err)
+			}
+			fmt.Println(string(jsonOutput))
+		} else if c.output == "yaml" {
+			rawPRs := getRawPRs(allPRs)
+			slices.SortFunc(rawPRs, types.ComparePullRequest)
+			yamlOutput, err := yaml.Marshal(rawPRs)
+			if err != nil {
+				return fmt.Errorf("failed to convert PRs from object to yaml: %w", err)
+			}
+			fmt.Println(string(yamlOutput))
+		} else {
+			printPullRequests(getPrintablePRs(allPRs))
+		}
 	} else {
 		fmt.Println("No PRs found!")
 	}
@@ -140,16 +161,34 @@ func (c *prsCommand) getPRClient(ctx context.Context, provider *types.SCMProvide
 	}
 }
 
+func getRawPRs(prs []*types.PullRequestResponse) []*types.PullRequest {
+	rawPRs := make([]*types.PullRequest, 0, len(prs))
+	for _, pr := range prs {
+		rawPRs = append(rawPRs, pr.PR)
+	}
+	return rawPRs
+}
+
+func getPrintablePRs(prs []*types.PullRequestResponse) []*types.PrintablePullRequest {
+	printablePRs := make([]*types.PrintablePullRequest, 0, len(prs))
+	for _, pr := range prs {
+		printablePRs = append(printablePRs, pr.PrintablePR)
+	}
+	return printablePRs
+}
+
 func registerPRs(app *kingpin.CmdClause) {
 	c := &prsCommand{}
 
 	cmd := app.Command(cli.SubcommandPRs, cli.SubcommandPRsHelpText).Default().Action(c.run)
 
-	cmd.Flag(cli.FlagState, cli.FlagStateHelpText).Default("open").StringVar(&c.state)
+	cmd.Flag(cli.FlagState, cli.FlagStateHelpText).Short(cli.FlagStateShort).Default("open").StringVar(&c.state)
 
-	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).StringVar(&c.providerType)
+	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).Short(cli.FlagTypeShort).StringVar(&c.providerType)
 
-	cmd.Flag(cli.FlagName, cli.FlagNameHelpText).StringVar(&c.providerName)
+	cmd.Flag(cli.FlagName, cli.FlagNameHelpText).Short(cli.FlagNameShort).StringVar(&c.providerName)
+
+	cmd.Flag(cli.FlagOutput, cli.FlagOutputHelpText).Short(cli.FlagOutputShort).Default("table").StringVar(&c.output)
 }
 
 func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {

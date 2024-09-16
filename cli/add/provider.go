@@ -3,14 +3,16 @@ package add
 import (
 	"context"
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/dhruv1397/pr-monitor/cli"
 	"github.com/dhruv1397/pr-monitor/clientbuilder"
 	"github.com/dhruv1397/pr-monitor/store"
 	"github.com/dhruv1397/pr-monitor/types"
+	"golang.org/x/term"
 	"net/url"
+	"os"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -45,10 +47,7 @@ func (c *providerCommand) run(*kingpin.ParseContext) error {
 		host.Scheme = "https"
 	}
 
-	pat, err := promptForSecret("Enter the PAT (Personal Access Token):")
-	if err != nil {
-		return err
-	}
+	pat := promptForSecret()
 
 	c.host = strings.TrimSuffix(host.String(), "/")
 	newProvider := &types.SCMProvider{
@@ -105,19 +104,16 @@ func registerProvider(app *kingpin.CmdClause) {
 
 	cmd.Arg(cli.ArgName, cli.ArgNameHelpText).Required().StringVar(&c.name)
 
-	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).Required().StringVar(&c.providerType)
+	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).Short(cli.FlagTypeShort).Required().StringVar(&c.providerType)
 
-	cmd.Flag(cli.FlagHost, cli.FlagHostHelpText).Required().StringVar(&c.host)
+	cmd.Flag(cli.FlagHost, cli.FlagHostHelpText).Short(cli.FlagHostShort).Required().StringVar(&c.host)
 }
 
-func promptForSecret(promptText string) (string, error) {
-	var result string
-	prompt := &survey.Password{
-		Message: promptText,
-	}
-	err := survey.AskOne(prompt, &result)
+func promptForSecret() string {
+	fmt.Println("Enter the PAT (Personal Access Token):")
+	patBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
-		return "", fmt.Errorf("failed to prompt for secret: %s", err)
+		os.Exit(1)
 	}
-	return result, nil
+	return string(patBytes)
 }
