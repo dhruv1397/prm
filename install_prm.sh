@@ -1,22 +1,18 @@
 #!/bin/bash
 
-# Function to fetch the latest release version
-fetch_latest_version() {
-  echo "Fetching the latest version..."
-  LATEST_VERSION=$(curl -s https://api.github.com/repos/dhruv1397/pr-monitor/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-  if [[ -z "$LATEST_VERSION" ]]; then
-    echo "Failed to fetch the latest version. Please check your internet connection or the repository."
-    exit 1
-  fi
-  echo "Latest version is $LATEST_VERSION"
-  echo "$LATEST_VERSION"
-}
-
 # Check if a release tag is provided as an argument
 if [[ -n "$1" ]]; then
   RELEASE_TAG="$1"
 else
-  RELEASE_TAG=$(fetch_latest_version)
+    echo "Fetching the latest version..."
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/dhruv1397/pr-monitor/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    if [[ -z "$LATEST_VERSION" ]]; then
+      echo "Failed to fetch the latest version. Please check your internet connection or the repository."
+      exit 1
+    fi
+    echo "Latest version is $LATEST_VERSION"
+    echo "$LATEST_VERSION"
+  RELEASE_TAG=$LATEST_VERSION
 fi
 
 # Remove the 'v' prefix from the version tag, if present
@@ -45,7 +41,7 @@ fi
 # Construct the download URL
 REPO_URL="https://github.com/dhruv1397/pr-monitor/releases/download"
 FILE_NAME="prm-${VERSION}-${OS}-${ARCH}"
-DOWNLOAD_URL="$REPO_URL/$RELEASE_TAG/$FILE_NAME"
+DOWNLOAD_URL="${REPO_URL}/${RELEASE_TAG}/${FILE_NAME}"
 
 # Download the binary file
 echo "Downloading $FILE_NAME from $DOWNLOAD_URL..."
@@ -67,6 +63,10 @@ else
     mkdir -p ~/.local/bin
     mv prm ~/.local/bin/prm
     export PATH=$PATH:~/.local/bin
+    echo "Since we couldn't write to /usr/local/bin, we have moved the binary to ~/.local/bin."
+    echo "Please add ~/.local/bin to your PATH. You can do this by running:"
+    echo "  export PATH=\$PATH:~/.local/bin"
+    echo "You may want to add the above line to your ~/.bashrc or ~/.zshrc file to make this change permanent."
 fi
 
 # Verify installation
