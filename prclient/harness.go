@@ -3,9 +3,9 @@ package prclient
 import (
 	"context"
 	"fmt"
-	"github.com/dhruv1397/pr-monitor/harness"
-	"github.com/dhruv1397/pr-monitor/types"
-	"github.com/dhruv1397/pr-monitor/util"
+	"github.com/dhruv1397/prm/harness"
+	"github.com/dhruv1397/prm/types"
+	"github.com/dhruv1397/prm/util"
 	"net/http"
 	"strconv"
 	"sync"

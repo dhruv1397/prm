@@ -2,7 +2,7 @@ package prclient
 
 import (
 	"context"
-	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/prm/types"
 )
 
 type PRClient interface {

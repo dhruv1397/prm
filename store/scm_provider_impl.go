@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/prm/types"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"

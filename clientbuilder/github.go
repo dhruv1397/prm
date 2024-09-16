@@ -2,9 +2,9 @@ package clientbuilder
 
 import (
 	"context"
-	"github.com/dhruv1397/pr-monitor/prclient"
-	"github.com/dhruv1397/pr-monitor/scmclient"
-	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/prm/prclient"
+	"github.com/dhruv1397/prm/scmclient"
+	"github.com/dhruv1397/prm/types"
 	"github.com/google/go-github/v64/github"
 	"golang.org/x/oauth2"
 )

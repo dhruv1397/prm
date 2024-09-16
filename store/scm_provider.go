@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/prm/types"
 )
 
 type SCMProvider interface {
