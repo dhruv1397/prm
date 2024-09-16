@@ -124,7 +124,7 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 		if c.output == "json" {
 			rawPRs := getRawPRs(allPRs)
 			slices.SortFunc(rawPRs, types.ComparePullRequest)
-			jsonOutput, err := json.Marshal(allPRs)
+			jsonOutput, err := json.Marshal(rawPRs)
 			if err != nil {
 				return fmt.Errorf("failed to convert PRs from object to json: %w", err)
 			}
