@@ -34,7 +34,7 @@ func registerProviders(app *kingpin.CmdClause) {
 
 	cmd := app.Command(cli.SubcommandProviders, cli.SubcommandListProvidersHelpText).Action(c.run)
 
-	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).StringVar(&c.providerType)
+	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).Short(cli.FlagTypeShort).StringVar(&c.providerType)
 
-	cmd.Flag(cli.FlagName, cli.FlagNameHelpText).StringVar(&c.providerName)
+	cmd.Flag(cli.FlagName, cli.FlagNameHelpText).Short(cli.FlagNameShort).StringVar(&c.providerName)
 }

@@ -10,5 +10,5 @@ type PRClient interface {
 		ctx context.Context,
 		state string,
 		transformationFn func(*types.PullRequest) *types.PrintablePullRequest,
-	) ([]*types.PrintablePullRequest, error)
+	) ([]*types.PullRequestResponse, error)
 }

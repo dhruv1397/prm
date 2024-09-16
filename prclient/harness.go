@@ -33,14 +33,14 @@ func (h *HarnessPRClient) GetPullRequests(
 	ctx context.Context,
 	state string,
 	transformationFn func(*types.PullRequest) *types.PrintablePullRequest,
-) ([]*types.PrintablePullRequest, error) {
-	var allPullRequests []*types.PrintablePullRequest
+) ([]*types.PullRequestResponse, error) {
+	var allPullRequests []*types.PullRequestResponse
 	var prMutex sync.Mutex
 	var errMutex sync.Mutex
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(h.repos)*500)
-	prChan := make(chan *types.PrintablePullRequest, len(h.repos)*500)
+	prChan := make(chan *types.PullRequestResponse, len(h.repos)*500)
 
 	for _, repo := range h.repos {
 		wg.Add(1)
@@ -115,7 +115,12 @@ func (h *HarnessPRClient) GetPullRequests(
 						State:            pr.State,
 					}
 
-					prChan <- transformationFn(currentPullRequest)
+					printablePR := transformationFn(currentPullRequest)
+
+					prChan <- &types.PullRequestResponse{
+						PR:          currentPullRequest,
+						PrintablePR: printablePR,
+					}
 				}(pr)
 			}
 

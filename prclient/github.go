@@ -30,8 +30,8 @@ func (g *GithubPRClient) GetPullRequests(
 	ctx context.Context,
 	state string,
 	transformationFn func(*types.PullRequest) *types.PrintablePullRequest,
-) ([]*types.PrintablePullRequest, error) {
-	var openPrintablePRs = make([]*types.PrintablePullRequest, 0)
+) ([]*types.PullRequestResponse, error) {
+	var prResponses = make([]*types.PullRequestResponse, 0)
 	var githubState = ""
 	if state == "closed" {
 		githubState = "state:closed is:unmerged"
@@ -51,7 +51,7 @@ func (g *GithubPRClient) GetPullRequests(
 
 	result, _, err := g.client.Search.Issues(ctx, query, opts)
 	if err != nil {
-		return openPrintablePRs, fmt.Errorf("error fetching github PRs for user %s: %w", g.user.Name, err)
+		return prResponses, fmt.Errorf("error fetching github PRs for user %s: %w", g.user.Name, err)
 	}
 
 	var prMutex sync.Mutex
@@ -59,7 +59,7 @@ func (g *GithubPRClient) GetPullRequests(
 	var wg sync.WaitGroup
 
 	errCh := make(chan error, 500)
-	respCh := make(chan *types.PrintablePullRequest, 500)
+	respCh := make(chan *types.PullRequestResponse, 500)
 
 	for _, issue := range result.Issues {
 		wg.Add(1)
@@ -67,13 +67,13 @@ func (g *GithubPRClient) GetPullRequests(
 		go func(issue *github.Issue) {
 			defer wg.Done()
 
-			openPrintablePR, err := g.getPRDetails(ctx, issue, transformationFn)
+			prResponse, err := g.getPRDetails(ctx, issue, transformationFn)
 			if err != nil {
 				errCh <- err
 				return
 			}
 
-			respCh <- openPrintablePR
+			respCh <- prResponse
 		}(issue)
 
 	}
@@ -93,7 +93,7 @@ func (g *GithubPRClient) GetPullRequests(
 				respCh = nil
 			} else {
 				prMutex.Lock()
-				openPrintablePRs = append(openPrintablePRs, resp)
+				prResponses = append(prResponses, resp)
 				prMutex.Unlock()
 			}
 		case errValue, ok := <-errCh:
@@ -108,17 +108,17 @@ func (g *GithubPRClient) GetPullRequests(
 	}
 
 	if len(errs) > 0 {
-		return openPrintablePRs, fmt.Errorf("errors encountered:\n%v", util.FormatErrors(errs))
+		return prResponses, fmt.Errorf("errors encountered:\n%v", util.FormatErrors(errs))
 	}
 
-	return openPrintablePRs, nil
+	return prResponses, nil
 }
 
 func (g *GithubPRClient) getPRDetails(
 	ctx context.Context,
 	issue *github.Issue,
 	transformationFn func(*types.PullRequest) *types.PrintablePullRequest,
-) (*types.PrintablePullRequest, error) {
+) (*types.PullRequestResponse, error) {
 	owner, repo, parseErr := parseGithubURL(*issue.HTMLURL)
 	if parseErr != nil {
 		return nil, fmt.Errorf("error parsing github PR URL %s: %w", *issue.HTMLURL, parseErr)
@@ -173,7 +173,7 @@ func (g *GithubPRClient) getPRDetails(
 		mergeable = "-"
 	}
 
-	openPR := &types.PullRequest{
+	rawPR := &types.PullRequest{
 		Title:            *pr.Title,
 		Number:           *pr.Number,
 		SCMProviderType:  "github",
@@ -185,7 +185,12 @@ func (g *GithubPRClient) getPRDetails(
 		RequestedChanges: changesRequested,
 	}
 
-	return transformationFn(openPR), nil
+	printablePR := transformationFn(rawPR)
+
+	return &types.PullRequestResponse{
+		PR:          rawPR,
+		PrintablePR: printablePR,
+	}, nil
 }
 
 func parseGithubURL(githubURL string) (string, string, error) {
