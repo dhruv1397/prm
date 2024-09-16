@@ -11,7 +11,7 @@ import (
 
 const (
 	application = "prm"
-	description = "Pull Request Monitor"
+	description = "Pull Request Monitor (prm) is a CLI tool to list pull requests from different SCM providers."
 )
 
 func main() {

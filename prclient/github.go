@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dhruv1397/pr-monitor/types"
+	"github.com/dhruv1397/pr-monitor/util"
 	"github.com/google/go-github/v64/github"
 	"net/url"
 	"strconv"
@@ -50,7 +51,7 @@ func (g *GithubPRClient) GetPullRequests(
 
 	result, _, err := g.client.Search.Issues(ctx, query, opts)
 	if err != nil {
-		return openPrintablePRs, fmt.Errorf("error executing search query: %v", err)
+		return openPrintablePRs, fmt.Errorf("error fetching github PRs for user %s: %w", g.user.Name, err)
 	}
 
 	var prMutex sync.Mutex
@@ -107,7 +108,7 @@ func (g *GithubPRClient) GetPullRequests(
 	}
 
 	if len(errs) > 0 {
-		return openPrintablePRs, fmt.Errorf("multiple errors occurred: %v", errs)
+		return openPrintablePRs, fmt.Errorf("errors encountered:\n%v", util.FormatErrors(errs))
 	}
 
 	return openPrintablePRs, nil
@@ -120,17 +121,17 @@ func (g *GithubPRClient) getPRDetails(
 ) (*types.PrintablePullRequest, error) {
 	owner, repo, parseErr := parseGithubURL(*issue.HTMLURL)
 	if parseErr != nil {
-		return nil, fmt.Errorf("error parsing query: %v", parseErr)
+		return nil, fmt.Errorf("error parsing github PR URL %s: %w", *issue.HTMLURL, parseErr)
 	}
 
 	pr, _, err := g.client.PullRequests.Get(ctx, owner, repo, *issue.Number)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching PR details: %v", err)
+		return nil, fmt.Errorf("error fetching PR details for %s: %w", *issue.HTMLURL, err)
 	}
 
 	reviews, _, err := g.client.PullRequests.ListReviews(ctx, owner, repo, *issue.Number, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching reviews: %v", err)
+		return nil, fmt.Errorf("error fetching PR reviews for %s: %w", *issue.HTMLURL, err)
 	}
 
 	approvedMap := map[string]bool{}
@@ -190,12 +191,12 @@ func (g *GithubPRClient) getPRDetails(
 func parseGithubURL(githubURL string) (string, string, error) {
 	parsedURL, err := url.Parse(githubURL)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("error parsing github URL %s: %w", githubURL, err)
 	}
 
 	parts := strings.Split(parsedURL.Path, "/")
 	if len(parts) < 3 {
-		return "", "", fmt.Errorf("invalid GitHub URL format")
+		return "", "", fmt.Errorf("invalid GitHub URL %s", parsedURL)
 	}
 
 	owner := parts[1]

@@ -1,4 +1,4 @@
-package refresh
+package add
 
 import (
 	"github.com/alecthomas/kingpin/v2"
@@ -6,6 +6,6 @@ import (
 )
 
 func Register(app *kingpin.Application) {
-	cmd := app.Command(cli.CommandRefresh, cli.CommandRefreshHelpText)
-	registerProviders(cmd)
+	cmd := app.Command(cli.CommandAdd, cli.CommandAddHelpText)
+	registerProvider(cmd)
 }

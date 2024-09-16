@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/dhruv1397/pr-monitor/cli"
 	"github.com/dhruv1397/pr-monitor/clientbuilder"
 	"github.com/dhruv1397/pr-monitor/store"
 	"github.com/dhruv1397/pr-monitor/types"
@@ -23,18 +24,32 @@ type providerCommand struct {
 func (c *providerCommand) run(*kingpin.ParseContext) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	pat, err := promptForSecret("Enter the PAT (Personal Access Token):")
+
+	str := store.NewSCMProviderImpl()
+
+	existingProviders, err := str.List(c.providerType, c.name)
 	if err != nil {
 		return err
 	}
-	str := store.NewSCMProviderImpl()
+
+	if len(existingProviders) != 0 {
+		return fmt.Errorf("SCM provider %s already exists", c.name)
+	}
+
 	host, err := url.Parse(c.host)
 	if err != nil {
 		return err
 	}
+
 	if host.Scheme == "" {
 		host.Scheme = "https"
 	}
+
+	pat, err := promptForSecret("Enter the PAT (Personal Access Token):")
+	if err != nil {
+		return err
+	}
+
 	c.host = strings.TrimSuffix(host.String(), "/")
 	newProvider := &types.SCMProvider{
 		Type:    c.providerType,
@@ -45,6 +60,7 @@ func (c *providerCommand) run(*kingpin.ParseContext) error {
 		Updated: time.Now().UnixMilli(),
 		Created: time.Now().UnixMilli(),
 	}
+
 	if c.providerType == "github" {
 		scmClient, err := clientbuilder.GetGithubSCMClient(ctx, pat)
 		if err != nil {
@@ -85,12 +101,13 @@ func (c *providerCommand) run(*kingpin.ParseContext) error {
 func registerProvider(app *kingpin.CmdClause) {
 	c := &providerCommand{}
 
-	cmd := app.Command("provider", "add an SCM provider").
-		Action(c.run)
+	cmd := app.Command(cli.SubcommandProvider, cli.SubcommandAddProviderHelpText).Action(c.run)
 
-	cmd.Arg("name", "name of the SCM provider").Required().StringVar(&c.name)
-	cmd.Flag("type", "type of the SCM provider (github/harness)").Required().StringVar(&c.providerType)
-	cmd.Flag("host", "host url of the SCM provider").Required().StringVar(&c.host)
+	cmd.Arg(cli.ArgName, cli.ArgNameHelpText).Required().StringVar(&c.name)
+
+	cmd.Flag(cli.FlagType, cli.FlagTypeHelpText).Required().StringVar(&c.providerType)
+
+	cmd.Flag(cli.FlagHost, cli.FlagHostHelpText).Required().StringVar(&c.host)
 }
 
 func promptForSecret(promptText string) (string, error) {

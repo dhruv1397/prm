@@ -18,10 +18,12 @@ func NewGithubSCMClient(client *github.Client) (*GithubSCMClient, error) {
 }
 
 func (c *GithubSCMClient) GetUser(ctx context.Context) (*types.User, error) {
+	fmt.Println("Fetching github user details...")
 	user, _, err := c.client.Users.Get(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("error fetching authenticated user: %v", err)
+		return nil, fmt.Errorf("error fetching authenticated github user: %w", err)
 	}
+	fmt.Println("Successfully fetched github user details!")
 	return &types.User{
 		Name: user.GetLogin(),
 	}, nil
