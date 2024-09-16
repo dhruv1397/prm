@@ -5,7 +5,7 @@ if [[ -n "$1" ]]; then
   RELEASE_TAG="$1"
 else
     echo "Fetching the latest version..."
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/dhruv1397/pr-monitor/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/dhruv1397/prm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -z "$LATEST_VERSION" ]]; then
       echo "Failed to fetch the latest version. Please check your internet connection or the repository."
       exit 1
@@ -39,7 +39,7 @@ if [[ "$OS" != "linux" && "$OS" != "darwin" ]]; then
 fi
 
 # Construct the download URL
-REPO_URL="https://github.com/dhruv1397/pr-monitor/releases/download"
+REPO_URL="https://github.com/dhruv1397/prm/releases/download"
 FILE_NAME="prm-${VERSION}-${OS}-${ARCH}"
 DOWNLOAD_URL="${REPO_URL}/${RELEASE_TAG}/${FILE_NAME}"
 

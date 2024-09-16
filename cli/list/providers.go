@@ -3,8 +3,8 @@ package list
 import (
 	"fmt"
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/dhruv1397/pr-monitor/cli"
-	"github.com/dhruv1397/pr-monitor/store"
+	"github.com/dhruv1397/prm/cli"
+	"github.com/dhruv1397/prm/store"
 )
 
 type providersCommand struct {

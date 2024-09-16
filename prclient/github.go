@@ -3,8 +3,8 @@ package prclient
 import (
 	"context"
 	"fmt"
-	"github.com/dhruv1397/pr-monitor/types"
-	"github.com/dhruv1397/pr-monitor/util"
+	"github.com/dhruv1397/prm/types"
+	"github.com/dhruv1397/prm/util"
 	"github.com/google/go-github/v64/github"
 	"net/url"
 	"strconv"

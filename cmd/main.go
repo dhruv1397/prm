@@ -2,12 +2,12 @@ package main
 
 import (
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/dhruv1397/pr-monitor/cli"
-	"github.com/dhruv1397/pr-monitor/cli/add"
-	"github.com/dhruv1397/pr-monitor/cli/list"
-	"github.com/dhruv1397/pr-monitor/cli/refresh"
-	"github.com/dhruv1397/pr-monitor/cli/remove"
-	"github.com/dhruv1397/pr-monitor/version"
+	"github.com/dhruv1397/prm/cli"
+	"github.com/dhruv1397/prm/cli/add"
+	"github.com/dhruv1397/prm/cli/list"
+	"github.com/dhruv1397/prm/cli/refresh"
+	"github.com/dhruv1397/prm/cli/remove"
+	"github.com/dhruv1397/prm/version"
 )
 
 const (

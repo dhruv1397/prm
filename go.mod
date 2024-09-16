@@ -1,4 +1,4 @@
-module github.com/dhruv1397/pr-monitor
+module github.com/dhruv1397/prm
 
 go 1.22.6
 
