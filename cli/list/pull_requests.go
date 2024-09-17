@@ -25,7 +25,7 @@ const (
 	colWidthSerialNumber     = 4
 	colWidthTitle            = 34
 	colWidthPRNumber         = 10
-	colWidthSCMType          = 10
+	colWidthSCMName          = 10
 	colWidthState            = 10
 	colWidthMergeable        = 10
 	colWidthApproved         = 17
@@ -33,7 +33,7 @@ const (
 	colWidthRequestedChanges = 17
 	colWidthURL              = 34
 	separatorLength          = 31 + colWidthSerialNumber + colWidthTitle + colWidthPRNumber +
-		colWidthSCMType + colWidthState + colWidthMergeable + colWidthApproved +
+		colWidthSCMName + colWidthState + colWidthMergeable + colWidthApproved +
 		colWidthCommented + colWidthRequestedChanges + colWidthURL
 	spacingPattern = "| %-4s | %-34s | %-10s | %-10s | %-10s | %-10s | %-17s | %-17s | %-17s | %-34s |\n"
 )
@@ -153,9 +153,9 @@ func (c *prsCommand) helper(ctx context.Context, providers []*types.SCMProvider)
 
 func (c *prsCommand) getPRClient(ctx context.Context, provider *types.SCMProvider) (prclient.PRClient, error) {
 	if provider.Type == "github" {
-		return clientbuilder.GetGithubPRClient(ctx, provider.User)
+		return clientbuilder.GetGithubPRClient(ctx, provider.User, provider.Name)
 	} else if provider.Type == "harness" {
-		return clientbuilder.GetHarnessPRClient(provider.Host, provider.User, provider.Repos)
+		return clientbuilder.GetHarnessPRClient(provider.Host, provider.User, provider.Repos, provider.Name)
 	} else {
 		return nil, fmt.Errorf("unknown provider type: %s", provider.Type)
 	}
@@ -194,7 +194,7 @@ func registerPRs(app *kingpin.CmdClause) {
 func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {
 	wrappedTitle := wrapText(pr.Title, colWidthTitle)
 	wrappedPRNumber := wrapText(strconv.Itoa(pr.Number), colWidthPRNumber)
-	wrappedSCMType := wrapText(pr.SCMProviderType, colWidthSCMType)
+	wrappedSCMName := wrapText(pr.SCMProviderName, colWidthSCMName)
 	wrappedState := wrapText(pr.State, colWidthState)
 	wrappedMergeable := wrapText(pr.Mergeable, colWidthMergeable)
 	wrappedApproved := wrapTextSlice(pr.Approved, colWidthApproved)
@@ -205,7 +205,7 @@ func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {
 	maxRows := max(
 		len(wrappedTitle),
 		len(wrappedPRNumber),
-		len(wrappedSCMType),
+		len(wrappedSCMName),
 		len(wrappedState),
 		len(wrappedMergeable),
 		len(wrappedApproved),
@@ -218,7 +218,7 @@ func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {
 		SCMProviderTypeRaw: pr.SCMProviderType,
 		Title:              wrappedTitle,
 		Number:             wrappedPRNumber,
-		SCMProviderType:    wrappedSCMType,
+		SCMProviderName:    wrappedSCMName,
 		State:              wrappedState,
 		Mergeable:          wrappedMergeable,
 		Approved:           wrappedApproved,
@@ -231,7 +231,7 @@ func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {
 
 func printPullRequests(prs []*types.PrintablePullRequest) {
 	printSeparator(separatorLength)
-	fmt.Printf(spacingPattern, "#", "Title", "PR Number", "SCM Type", "State", "Mergeable", "Approved", "Commented",
+	fmt.Printf(spacingPattern, "#", "Title", "PR Number", "SCM Name", "State", "Mergeable", "Approved", "Commented",
 		"Requested Changes", "URL")
 	printSeparator(separatorLength)
 
@@ -243,7 +243,7 @@ func printPullRequests(prs []*types.PrintablePullRequest) {
 				getSrNumberElement(index, i),
 				getListElement(pr.Title, i),
 				getListElement(pr.Number, i),
-				getListElement(pr.SCMProviderType, i),
+				getListElement(pr.SCMProviderName, i),
 				getListElement(pr.State, i),
 				getListElement(pr.Mergeable, i),
 				getListElement(pr.Approved, i),
