@@ -37,33 +37,33 @@ type PullRequestResponse struct {
 }
 
 func ComparePullRequest(a, b *PullRequest) int {
-	if a.SCMProviderType == b.SCMProviderType {
-		if a.Number > b.Number {
-			return 1
-		} else if a.Number == b.Number {
-			return 0
-		}
-		return -1
+	if a.SCMProviderType != b.SCMProviderType {
+		return strings.Compare(a.SCMProviderType, b.SCMProviderType)
 	}
-	if a.SCMProviderType == b.SCMProviderType {
+	if a.SCMProviderName != b.SCMProviderName {
 		return strings.Compare(a.SCMProviderName, b.SCMProviderName)
 	}
-
-	return strings.Compare(a.SCMProviderType, b.SCMProviderType)
+	if a.Number > b.Number {
+		return 1
+	}
+	if a.Number < b.Number {
+		return -1
+	}
+	return 0
 }
 
 func ComparePrintablePullRequest(a, b *PrintablePullRequest) int {
-	if a.SCMProviderTypeRaw == b.SCMProviderTypeRaw {
-		if a.NumberRaw > b.NumberRaw {
-			return 1
-		} else if a.NumberRaw == b.NumberRaw {
-			return 0
-		}
-		return -1
+	if a.SCMProviderTypeRaw != b.SCMProviderTypeRaw {
+		return strings.Compare(a.SCMProviderTypeRaw, b.SCMProviderTypeRaw)
 	}
-	if a.SCMProviderTypeRaw == b.SCMProviderTypeRaw {
+	if a.SCMProviderNameRaw != b.SCMProviderNameRaw {
 		return strings.Compare(a.SCMProviderNameRaw, b.SCMProviderNameRaw)
 	}
-
-	return strings.Compare(a.SCMProviderTypeRaw, b.SCMProviderTypeRaw)
+	if a.NumberRaw > b.NumberRaw {
+		return 1
+	}
+	if a.NumberRaw < b.NumberRaw {
+		return -1
+	}
+	return 0
 }
