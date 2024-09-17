@@ -9,4 +9,5 @@ type SCMProvider interface {
 	UpdateBulk(providers []types.SCMProvider) error
 	List(providerType string, providerName string) ([]*types.SCMProvider, error)
 	Delete(name string) error
+	Purge() error
 }

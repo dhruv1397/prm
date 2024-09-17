@@ -103,6 +103,10 @@ func (s *scmProviderImpl) Delete(name string) error {
 	return nil
 }
 
+func (s *scmProviderImpl) Purge() error {
+	return s.deleteYAML()
+}
+
 func (s *scmProviderImpl) getConfigFilePath() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -166,6 +170,29 @@ func (s *scmProviderImpl) writeYAML(providerMap map[string]*types.SCMProvider) e
 	err = os.WriteFile(configFilePath, yamlData, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing SCM provider config: %w", err)
+	}
+
+	return nil
+}
+
+func (s *scmProviderImpl) deleteYAML() error {
+	configFilePath, err := s.getConfigFilePath()
+	if err != nil {
+		return fmt.Errorf("error getting SCM provider config file path before purging: %w", err)
+	}
+
+	_, err = os.Stat(configFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		} else {
+			return fmt.Errorf("error checking SCM provider config file %s: %w", configFilePath, err)
+		}
+	}
+
+	err = os.Remove(configFilePath)
+	if err != nil {
+		return fmt.Errorf("error purging SCM provider config: %w", err)
 	}
 
 	return nil
