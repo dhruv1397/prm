@@ -13,16 +13,18 @@ import (
 )
 
 type GithubPRClient struct {
-	user   *types.User
-	client *github.Client
+	user         *types.User
+	client       *github.Client
+	providerName string
 }
 
 var _ PRClient = (*GithubPRClient)(nil)
 
-func NewGithubPRClient(user *types.User, client *github.Client) (*GithubPRClient, error) {
+func NewGithubPRClient(user *types.User, client *github.Client, providerName string) (*GithubPRClient, error) {
 	return &GithubPRClient{
-		user:   user,
-		client: client,
+		user:         user,
+		client:       client,
+		providerName: providerName,
 	}, nil
 }
 
@@ -177,6 +179,7 @@ func (g *GithubPRClient) getPRDetails(
 		Title:            *pr.Title,
 		Number:           *pr.Number,
 		SCMProviderType:  "github",
+		SCMProviderName:  g.providerName,
 		URL:              issue.GetHTMLURL(),
 		State:            state,
 		Mergeable:        mergeable,

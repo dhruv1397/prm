@@ -12,20 +12,22 @@ import (
 )
 
 type HarnessPRClient struct {
-	httpClient *http.Client
-	host       string
-	user       *types.User
-	repos      []*types.Repo
+	httpClient   *http.Client
+	host         string
+	user         *types.User
+	repos        []*types.Repo
+	providerName string
 }
 
 var _ PRClient = (*HarnessPRClient)(nil)
 
-func NewHarnessPRClient(host string, user *types.User, repos []*types.Repo) (*HarnessPRClient, error) {
+func NewHarnessPRClient(host string, user *types.User, repos []*types.Repo, providerName string) (*HarnessPRClient, error) {
 	return &HarnessPRClient{
-		httpClient: http.DefaultClient,
-		host:       host,
-		user:       user,
-		repos:      repos,
+		httpClient:   http.DefaultClient,
+		host:         host,
+		user:         user,
+		repos:        repos,
+		providerName: providerName,
 	}, nil
 }
 
@@ -107,6 +109,7 @@ func (h *HarnessPRClient) GetPullRequests(
 						Number:           pr.Number,
 						Title:            pr.Title,
 						SCMProviderType:  "harness",
+						SCMProviderName:  h.providerName,
 						URL:              url,
 						Approved:         approved,
 						Commented:        commented,

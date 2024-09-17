@@ -6,6 +6,7 @@ type PullRequest struct {
 	Number           int      `json:"number" yaml:"number"`
 	Title            string   `json:"title" yaml:"title"`
 	SCMProviderType  string   `json:"scm_provider_type" yaml:"scm_provider_type"`
+	SCMProviderName  string   `json:"scm_provider_name" yaml:"scm_provider_name"`
 	URL              string   `json:"url" yaml:"url"`
 	State            string   `json:"state" yaml:"state"`
 	Approved         []string `json:"approved" yaml:"approved"`
@@ -17,9 +18,10 @@ type PullRequest struct {
 type PrintablePullRequest struct {
 	NumberRaw          int
 	SCMProviderTypeRaw string
+	SCMProviderNameRaw string
 	Number             []string
 	Title              []string
-	SCMProviderType    []string
+	SCMProviderName    []string
 	URL                []string
 	State              []string
 	Approved           []string
@@ -43,6 +45,9 @@ func ComparePullRequest(a, b *PullRequest) int {
 		}
 		return -1
 	}
+	if a.SCMProviderType == b.SCMProviderType {
+		return strings.Compare(a.SCMProviderName, b.SCMProviderName)
+	}
 
 	return strings.Compare(a.SCMProviderType, b.SCMProviderType)
 }
@@ -55,6 +60,9 @@ func ComparePrintablePullRequest(a, b *PrintablePullRequest) int {
 			return 0
 		}
 		return -1
+	}
+	if a.SCMProviderTypeRaw == b.SCMProviderTypeRaw {
+		return strings.Compare(a.SCMProviderNameRaw, b.SCMProviderNameRaw)
 	}
 
 	return strings.Compare(a.SCMProviderTypeRaw, b.SCMProviderTypeRaw)

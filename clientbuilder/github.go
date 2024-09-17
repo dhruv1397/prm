@@ -13,8 +13,8 @@ func GetGithubSCMClient(ctx context.Context, pat string) (*scmclient.GithubSCMCl
 	return scmclient.NewGithubSCMClient(getGithubClientWithPAT(ctx, pat))
 }
 
-func GetGithubPRClient(ctx context.Context, user *types.User) (prclient.PRClient, error) {
-	return prclient.NewGithubPRClient(user, getGithubClientWithPAT(ctx, user.PAT))
+func GetGithubPRClient(ctx context.Context, user *types.User, providerName string) (prclient.PRClient, error) {
+	return prclient.NewGithubPRClient(user, getGithubClientWithPAT(ctx, user.PAT), providerName)
 }
 
 func getGithubClientWithPAT(ctx context.Context, pat string) *github.Client {

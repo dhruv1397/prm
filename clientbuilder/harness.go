@@ -10,6 +10,6 @@ func GetHarnessSCMClient(host string, pat string) (*scmclient.HarnessSCMClient, 
 	return scmclient.NewHarnessSCMClient(host, pat)
 }
 
-func GetHarnessPRClient(host string, user *types.User, repos []*types.Repo) (prclient.PRClient, error) {
-	return prclient.NewHarnessPRClient(host, user, repos)
+func GetHarnessPRClient(host string, user *types.User, repos []*types.Repo, providerName string) (prclient.PRClient, error) {
+	return prclient.NewHarnessPRClient(host, user, repos, providerName)
 }
