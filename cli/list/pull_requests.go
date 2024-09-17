@@ -216,6 +216,7 @@ func ConvertToPrintable(pr *types.PullRequest) *types.PrintablePullRequest {
 	return &types.PrintablePullRequest{
 		NumberRaw:          pr.Number,
 		SCMProviderTypeRaw: pr.SCMProviderType,
+		SCMProviderNameRaw: pr.SCMProviderName,
 		Title:              wrappedTitle,
 		Number:             wrappedPRNumber,
 		SCMProviderName:    wrappedSCMName,
