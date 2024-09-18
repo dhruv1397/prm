@@ -65,7 +65,7 @@ prm list prs --state open
 ```
 <img width="1400" alt="list pr" src="https://github.com/user-attachments/assets/2dbf978a-c2f1-40d9-a43f-ef9a18d3b717">
 
-You can filter the PRs by provider type (--type) and provider name (--name).
+You can filter the PRs further by provider type (--type) and provider name (--name).
 #### Changing the output format
 You can change the default format from table to json or yaml. \
 json
