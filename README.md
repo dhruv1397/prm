@@ -37,7 +37,7 @@ curl -L https://raw.githubusercontent.com/dhruv1397/prm/main/install.sh | bash -
 You can download the binary directly from the release page, make it executable and add it to the PATH.
 
 ## Usage
-> All types support shorthands ie -t for --type, -o for --output, -s for --state, -n for --name, etc.
+> All flags support shorthands ie -t for --type, -o for --output, -s for --state, -n for --name, etc.
 ### 1. Adding a SCM provider
 > 1 SCM provider refers to the group of all the repos which can be accessed by a single PAT.
 
