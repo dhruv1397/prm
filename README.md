@@ -67,7 +67,7 @@ prm list prs --state open
 
 You can filter the PRs by provider type (--type) and provider name (--name).
 #### Changing the output format
-You can change the default format from table to json or yaml.
+You can change the default format from table to json or yaml. \
 json
 ```bash
 prm list prs --output json
@@ -95,7 +95,7 @@ prm remove provider my-work-github
 
 ### 5. Refreshing the SCM providers data
 > This is applicable only to Harness.
-When you add a Harness SCM provider, `prm` fetches user and repo related data which it uses to fetch the PRs. This user and repo data is persisted in a file to reduce unnecessary calls during fetching the PRs. If any org, project or repo has been added or removed for the user, we need to the refresh the `prm` config.
+When you add a Harness SCM provider, `prm` fetches user and repo related data which it uses to fetch the PRs. This user and repo data is persisted in a file to reduce unnecessary calls during fetching the PRs. If any org, project or repo has been added or removed for the user, we need to refresh the `prm` config.
 ```bash
 prm refresh providers
 ```
@@ -127,7 +127,7 @@ curl -L https://raw.githubusercontent.com/dhruv1397/prm/main/uninstall.sh | bash
 ## Security
 It is important to be aware of what data is accessed by any tool to ensure there is no abuse.
 To ensure your data is secure, `prm` does not share your data outside your setup.
-Moreover, it provides a purge command to delete all the data persisted by the app.
+Moreover, it provides the `purge` command to delete all the data persisted by the app.
 
 ## Supported configurations (OS/Arch)
 - linux/amd64
@@ -145,7 +145,7 @@ uname -m
 ```
 ## References
 ### Github
-Scope required for PAT: `read:org, repo`
+Scopes required for PAT: `read:org, repo`
 
 Generate PAT (classic):
 https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api?apiVersion=2022-11-28#authenticating-with-a-personal-access-token \
