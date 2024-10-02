@@ -1,6 +1,7 @@
 package harness
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,27 @@ import (
 )
 
 func Get(ctx context.Context, client *http.Client, pat string, url string, responseDTO any) error {
-	r, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	return do(ctx, client, http.MethodGet, pat, url, nil, responseDTO)
+}
+
+func Post(ctx context.Context, client *http.Client, pat string, url string, reqBody, responseDTO any) error {
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("error while marshalling request body: %w", err)
+	}
+	return do(ctx, client, http.MethodPost, pat, url, bytes.NewBuffer(bodyBytes), responseDTO)
+}
+
+func do(
+	ctx context.Context,
+	client *http.Client,
+	method string,
+	pat string,
+	url string,
+	reqBody io.Reader,
+	responseDTO any,
+) error {
+	r, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
 		return fmt.Errorf("error while forming request: %w", err)
 	}

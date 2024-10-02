@@ -36,6 +36,7 @@ type PRData struct {
 	Number           int    `json:"number"`
 	Title            string `json:"title"`
 	State            string `json:"state"`
+	SourceSHA        string `json:"source_sha"`
 	MergeCheckStatus string `json:"merge_check_status"`
 }
 
@@ -57,4 +58,18 @@ type PRActivityDecision struct {
 }
 type PRActivityAuthor struct {
 	DisplayName string `json:"display_name"`
+}
+
+type PRMergeRequest struct {
+	BypassRules bool   `json:"bypass_rules"`
+	DryRun      bool   `json:"dry_run"`
+	SourceSHA   string `json:"source_sha"`
+}
+
+type PRMergeResponse struct {
+	RuleViolations []PRRuleViolation `json:"rule_violations"`
+}
+
+type PRRuleViolation struct {
+	Bypassable bool `json:"bypassable"`
 }

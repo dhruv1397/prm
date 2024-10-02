@@ -7,7 +7,6 @@ import (
 	"github.com/dhruv1397/prm/util"
 	"github.com/google/go-github/v64/github"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -49,6 +48,7 @@ func (g *GithubPRClient) GetPullRequests(
 
 	opts := &github.SearchOptions{
 		ListOptions: github.ListOptions{PerPage: 500},
+		Order:       "desc",
 	}
 
 	result, _, err := g.client.Search.Issues(ctx, query, opts)
@@ -130,6 +130,12 @@ func (g *GithubPRClient) getPRDetails(
 	if err != nil {
 		return nil, fmt.Errorf("error fetching PR details for %s: %w", *issue.HTMLURL, err)
 	}
+	var mergeable = "false"
+	// NOTE: See https://docs.github.com/en/graphql/reference/enums#mergestatestatus for possible values of MergeableState
+	if pr.Mergeable != nil && *pr.Mergeable &&
+		(*pr.MergeableState == "clean" || *pr.MergeableState == "unstable" || *pr.MergeableState == "has_hooks") {
+		mergeable = "true"
+	}
 
 	reviews, _, err := g.client.PullRequests.ListReviews(ctx, owner, repo, *issue.Number, nil)
 	if err != nil {
@@ -169,7 +175,6 @@ func (g *GithubPRClient) getPRDetails(
 	}
 
 	state := *pr.State
-	var mergeable = strconv.FormatBool(pr.Mergeable != nil && *pr.Mergeable)
 	if *pr.Merged {
 		state = "merged"
 		mergeable = "-"

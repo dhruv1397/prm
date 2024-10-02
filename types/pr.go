@@ -44,10 +44,10 @@ func ComparePullRequest(a, b *PullRequest) int {
 		return strings.Compare(a.SCMProviderName, b.SCMProviderName)
 	}
 	if a.Number > b.Number {
-		return 1
+		return -1
 	}
 	if a.Number < b.Number {
-		return -1
+		return 1
 	}
 	return 0
 }
@@ -60,10 +60,10 @@ func ComparePrintablePullRequest(a, b *PrintablePullRequest) int {
 		return strings.Compare(a.SCMProviderNameRaw, b.SCMProviderNameRaw)
 	}
 	if a.NumberRaw > b.NumberRaw {
-		return 1
+		return -1
 	}
 	if a.NumberRaw < b.NumberRaw {
-		return -1
+		return 1
 	}
 	return 0
 }
