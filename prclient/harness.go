@@ -103,6 +103,16 @@ func (h *HarnessPRClient) GetPullRequests(
 					mergeable := "-"
 					if pr.State != "merged" {
 						mergeable = strconv.FormatBool(pr.MergeCheckStatus == "mergeable")
+						if mergeable == "true" {
+							rulesPassed, rulesErr := h.getPRMergeDetails(ctx, repo, pr)
+							if rulesErr != nil {
+								errChan <- rulesErr
+								return
+							}
+							if !rulesPassed {
+								mergeable = "false"
+							}
+						}
 					}
 
 					currentPullRequest := &types.PullRequest{
@@ -178,7 +188,7 @@ func (h *HarnessPRClient) getPRs(ctx context.Context, repo *types.Repo, state st
 	apiURL := fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s%s%s%d%s", h.host, "/code/api/v1/repos/", repo.RepoIdentifier,
 		"/pullreq?accountIdentifier=", repo.AccountIdentifier, "&orgIdentifier=", repo.OrgIdentifier,
 		"&projectIdentifier=", repo.ProjectIdentifier, "&state=", state, "&page=0&limit=500&created_by=",
-		h.user.PrincipalID, "&order=asc")
+		h.user.PrincipalID, "&order=desc")
 	err := harness.Get(ctx, h.httpClient, h.user.PAT, apiURL, &prs)
 	if err != nil {
 		return prs, fmt.Errorf("error fetching PRs for repo %s: %w", repo.RepoIdentifier, err)
@@ -201,4 +211,33 @@ func (h *HarnessPRClient) getPRActivities(
 			h.getHarnessPRURL(pr.Number, repo), err)
 	}
 	return prActivities, nil
+}
+
+func (h *HarnessPRClient) getPRMergeDetails(
+	ctx context.Context,
+	repo *types.Repo,
+	pr *types.PRData,
+) (bool, error) {
+	var prMergeResponse = types.PRMergeResponse{}
+	apiURL := fmt.Sprintf("%s%s%s%s%d%s%s%s%s%s%s", h.host, "/code/api/v1/repos/", repo.RepoIdentifier,
+		"/pullreq/", pr.Number, "/merge?accountIdentifier=", repo.AccountIdentifier, "&orgIdentifier=",
+		repo.OrgIdentifier, "&projectIdentifier=", repo.ProjectIdentifier)
+	reqBody := types.PRMergeRequest{
+		BypassRules: true,
+		DryRun:      true,
+		SourceSHA:   pr.SourceSHA,
+	}
+	err := harness.Post(ctx, h.httpClient, h.user.PAT, apiURL, reqBody, &prMergeResponse)
+	if err != nil {
+		return false, fmt.Errorf("error fetching PR merge details for %s: %w",
+			h.getHarnessPRURL(pr.Number, repo), err)
+	}
+	if len(prMergeResponse.RuleViolations) > 0 {
+		for _, violation := range prMergeResponse.RuleViolations {
+			if !violation.Bypassable {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }
